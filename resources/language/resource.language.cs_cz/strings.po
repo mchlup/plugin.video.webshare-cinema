@@ -212,3 +212,11 @@ msgctxt "#30304"
 msgid "Unknown error - "
 msgstr "Neznámá chyba - "
 
+msgctxt "#32030"
+msgid "CSFD.cz info"
+msgstr "CSFD.cz informace"
+
+msgctxt "#32031"
+msgid "Není nalezeno na ČSFD."
+msgstr "Není nalezeno na ČSFD."
+
