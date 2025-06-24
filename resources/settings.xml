@@ -22,4 +22,9 @@
         <setting type="sep"/>
         <setting label="30051" id="experimental" type="bool" default="false" />
     </category>
+    <category label="30040">
+        <setting id="tmdb_token" type="text" label="TMDb API klíč" default=""/>
+        <setting id="tmdb_lang" type="select" label="Jazyk metadat" values="cs-CZ|en-US" default="cs-CZ"/>
+        <setting id="prefer_czech_title" type="bool" label="Upřednostnit české názvy" default="true"/>
+    </category>
 </settings>
