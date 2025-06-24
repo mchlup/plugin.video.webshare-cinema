@@ -932,6 +932,3 @@ def router(paramstring):
             menu()
     else:
         menu()
-        
-if __name__ == '__main__':
-    router(sys.argv[2][1:])
