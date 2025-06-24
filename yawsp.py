@@ -204,7 +204,42 @@ def is_episode(filename):
 def movies(params):
     xbmcplugin.setPluginCategory(_handle, _addon.getAddonInfo('name') + " \\ Filmy")
     token = revalidate()
-    tmdb_helper = themoviedb.TMDB(_addon, _profile)
+    # --- TMDb minimal helper pro filmy ---
+    class TMDbMovieHelper:
+        def __init__(self, addon):
+            self.API_TOKEN = addon.getSetting('tmdb_token')
+            self.LANG = addon.getSetting('tmdb_lang') or 'cs-CZ'
+            self.BASE_URL = "https://api.themoviedb.org/3"
+        def search(self, query):
+            url = f"{self.BASE_URL}/search/movie"
+            params = {
+                "api_key": self.API_TOKEN,
+                "query": query,
+                "language": self.LANG,
+                "include_adult": "false"
+            }
+            try:
+                resp = requests.get(url, params=params, timeout=5)
+                if resp.status_code == 200:
+                    return resp.json().get("results", [])
+            except Exception as e:
+                xbmc.log(str(e), xbmc.LOGERROR)
+            return []
+        def details(self, movie_id):
+            url = f"{self.BASE_URL}/movie/{movie_id}"
+            params = {
+                "api_key": self.API_TOKEN,
+                "language": self.LANG
+            }
+            try:
+                resp = requests.get(url, params=params, timeout=5)
+                if resp.status_code == 200:
+                    return resp.json()
+            except Exception as e:
+                xbmc.log(str(e), xbmc.LOGERROR)
+            return None
+
+    tmdb = TMDbMovieHelper(_addon)
     response = api('search', {
         'category': 'video',
         'sort': 'recent',
@@ -219,28 +254,23 @@ def movies(params):
         item = todict(file)
         if not is_episode(item['name']):
             files.append(item)
-    # Sort by newest (already returned sorted)
     for file in files:
         title = file['name']
         movie_title = re.sub(r'\.(mp4|mkv|avi|mov)$', '', title, flags=re.IGNORECASE)
         movie_title = re.sub(r'[\.\_\-\[\]\(\)]', ' ', movie_title)
         movie_title = re.sub(r'\s+', ' ', movie_title).strip()
-        tmdb_results = tmdb_helper.get_movie_info(movie_title)
-        tmdb_data = None
-        if tmdb_results:
-            tmdb_data = tmdb_helper.get_movie_details(tmdb_results[0]['id'])
+        movie_results = tmdb.search(movie_title)
+        movie_meta = tmdb.details(movie_results[0]['id']) if movie_results else None
         listitem = xbmcgui.ListItem(label=movie_title)
-        if tmdb_data:
-            # Prefer Czech, fallback to English
-            poster_url = ""
-            if tmdb_data.get('poster_path'):
-                poster_url = f"https://image.tmdb.org/t/p/w500{tmdb_data['poster_path']}"
+        if movie_meta:
+            if movie_meta.get('poster_path'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{movie_meta['poster_path']}"
                 listitem.setArt({'poster': poster_url, 'thumb': poster_url})
             info = {
-                'title': tmdb_data.get('title', movie_title),
-                'originaltitle': tmdb_data.get('original_title', ''),
-                'plot': tmdb_data.get('overview', ''),
-                'year': tmdb_data.get('release_date', '')[:4] if tmdb_data.get('release_date') else None
+                'title': movie_meta.get('title', movie_title),
+                'originaltitle': movie_meta.get('original_title', ''),
+                'plot': movie_meta.get('overview', ''),
+                'year': movie_meta.get('release_date', '')[:4] if movie_meta.get('release_date') else None
             }
             listitem.setInfo('video', info)
         listitem.setProperty('IsPlayable', 'true')
