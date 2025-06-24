@@ -662,6 +662,11 @@ def menu():
     listitem.setArt({'icon': 'DefaultAddonsSearch.png'})
     xbmcplugin.addDirectoryItem(_handle, get_url(action='search'), listitem, True)
 
+    # Movies
+    listitem = xbmcgui.ListItem(label='Filmy')
+    listitem.setArt({'icon': 'DefaultMovies.png'})
+    xbmcplugin.addDirectoryItem(_handle, get_url(action='movies'), listitem, True)
+
     # Series
     listitem = xbmcgui.ListItem(label='Seriály')
     listitem.setArt({'icon': 'DefaultTVShows.png'})
