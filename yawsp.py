@@ -188,6 +188,70 @@ def ask(what):
     if kb.isConfirmed():
         return kb.getText() # User input
     return None
+
+def is_episode(filename):
+    # Detect if the filename matches typical TV episode patterns
+    patterns = [
+        r'[sS](\d+)[eE](\d+)',       # S01E01 or s01e01
+        r'(\d+)x(\d+)',              # 1x01
+        r'(\d{1,2})\.(\d{2})\.',     # 1.01.
+    ]
+    for pattern in patterns:
+        if re.search(pattern, filename):
+            return True
+    return False
+
+def movies(params):
+    xbmcplugin.setPluginCategory(_handle, _addon.getAddonInfo('name') + " \\ Filmy")
+    token = revalidate()
+    tmdb_helper = themoviedb.TMDB(_addon, _profile)
+    response = api('search', {
+        'category': 'video',
+        'sort': 'recent',
+        'limit': 100,
+        'offset': 0,
+        'wst': token,
+        'maybe_removed': 'true'
+    })
+    xml = ET.fromstring(response.content)
+    files = []
+    for file in xml.iter('file'):
+        item = todict(file)
+        if not is_episode(item['name']):
+            files.append(item)
+    # Sort by newest (already returned sorted)
+    for file in files:
+        title = file['name']
+        movie_title = re.sub(r'\.(mp4|mkv|avi|mov)$', '', title, flags=re.IGNORECASE)
+        movie_title = re.sub(r'[\.\_\-\[\]\(\)]', ' ', movie_title)
+        movie_title = re.sub(r'\s+', ' ', movie_title).strip()
+        tmdb_results = tmdb_helper.get_movie_info(movie_title)
+        tmdb_data = None
+        if tmdb_results:
+            tmdb_data = tmdb_helper.get_movie_details(tmdb_results[0]['id'])
+        listitem = xbmcgui.ListItem(label=movie_title)
+        if tmdb_data:
+            # Prefer Czech, fallback to English
+            poster_url = ""
+            if tmdb_data.get('poster_path'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{tmdb_data['poster_path']}"
+                listitem.setArt({'poster': poster_url, 'thumb': poster_url})
+            info = {
+                'title': tmdb_data.get('title', movie_title),
+                'originaltitle': tmdb_data.get('original_title', ''),
+                'plot': tmdb_data.get('overview', ''),
+                'year': tmdb_data.get('release_date', '')[:4] if tmdb_data.get('release_date') else None
+            }
+            listitem.setInfo('video', info)
+        listitem.setProperty('IsPlayable', 'true')
+        xbmcplugin.addDirectoryItem(
+            _handle,
+            get_url(action='play', ident=file['ident'], name=file['name']),
+            listitem,
+            False
+        )
+    xbmcplugin.setContent(_handle, 'movies')
+    xbmcplugin.endOfDirectory(_handle)
     
 def loadsearch():
     history = []
@@ -843,11 +907,13 @@ def router(paramstring):
             download(params)
         elif params['action'] == 'db':
             db(params)
+        elif params['action'] == 'movies':
+            movies(params)
         # Series Manager actions
-        elif params['action'] == 'series':
-            series_menu(params)
+       elif params['action'] == 'series':
+            series_manager.create_series_menu(series_manager.SeriesManager(_addon, _profile), _handle, _addon.getSetting('tmdb_token'))
         elif params['action'] == 'series_search':
-            series_search(params)
+            series_manager.create_series_search(series_manager.SeriesManager(_addon, _profile), _handle, _addon.getSetting('tmdb_token'))
         elif params['action'] == 'series_search_tmdb':
             series_search_tmdb(params)
         elif params['action'] == 'series_detail':
@@ -866,3 +932,6 @@ def router(paramstring):
             menu()
     else:
         menu()
+        
+if __name__ == '__main__':
+    router(sys.argv[2][1:])
