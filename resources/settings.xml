@@ -21,6 +21,8 @@
 		<setting label="30044" id="dnevery" type="select" values="1%|5%|10%|20%|25%|50%" default="10%" visible="eq(-1,true)" />
         <setting type="sep"/>
         <setting label="30051" id="experimental" type="bool" default="false" />
+        <setting id="webshare_token" type="text" label="Aktuální Webshare token" enable="false" visible="true" default=""/>
+        <setting id="webshare_token_expiry" type="text" label="Platnost tokenu" enable="false" visible="true" default=""/>
     </category>
     <category label="30040">
         <setting id="tmdb_token" type="text" label="TMDb API klíč" default=""/>

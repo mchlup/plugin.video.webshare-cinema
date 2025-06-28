@@ -917,15 +917,6 @@ def series_refresh(params):
         popinfo(f'Chyba: {str(e)}', icon=xbmcgui.NOTIFICATION_ERROR)
         xbmcplugin.endOfDirectory(_handle, succeeded=False)
 
-# Příklad upravené funkce pro omezení výsledků:
-def fetch_latest_items(api, category='movies', limit=30):
-    response = api.get('https://webshare.cz/api/search/', params={
-        'category': category,
-        'limit': limit,
-        'sort': 'date_desc'
-    })
-    return response.json()['files']
-
 def router(paramstring):
     params = dict(parse_qsl(paramstring))
     if params:
